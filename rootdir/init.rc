@@ -11,6 +11,7 @@ import /init.${ro.zygote}.rc
 import /init.trace.rc
 # Include CM's extra init file
 import /init.cm.rc
+import /init.hermes.power.rc
 import /init.storage.rc
 import /init.modem.rc
 
@@ -97,6 +98,28 @@ loglevel 1 ####
     # memory control cgroup
     mkdir /dev/memcg 0700 root system
     mount cgroup none /dev/memcg memory
+
+#Perf modes
+on property:sys.perf.profile=2
+    start perfmode
+
+service perfmode /system/bin/thermal_manager  /system/etc/.tp/thermal.off.conf
+    user root
+    group root
+    oneshot
+    disabled
+
+on property:sys.perf.profile=1
+    start normalmode
+
+service normalmode /system/bin/thermal_manager  /system/etc/.tp/thermal.conf
+    user root
+    group root
+    oneshot
+    disabled
+    
+on property:sys.perf.profile=0
+    start normalmode
 
     write /proc/sys/kernel/panic_on_oops 1
     write /proc/sys/kernel/hung_task_timeout_secs 0
@@ -546,6 +569,13 @@ on property:vold.decrypt=trigger_shutdown_framework
 on property:sys.powerctl=*
     powerctl ${sys.powerctl}
 
+## performance mode switch
+on property:persist.sys.aries.power_profile=high
+start perfmode
+
+on property:persist.sys.aries.power_profile=middle
+start normalmode
+
 # system server cannot write to /proc/sys files,
 # and chown/chmod does not work for /proc/sys/ entries.
 # So proxy writes through init.
@@ -768,4 +798,16 @@ service fpDaemon /system/bin/gxFpDaemon
     class main
     oneshot
 # add by GOODIX for finger print end
+
+service perfmode /system/bin/thermal_manager /system/etc/.tp/thermal.off.conf
+user root
+group root
+oneshot
+disabled
+
+service normalmode /system/bin/thermal_manager /system/etc/.tp/thermal.conf
+user root
+group root
+oneshot
+disabled
 
